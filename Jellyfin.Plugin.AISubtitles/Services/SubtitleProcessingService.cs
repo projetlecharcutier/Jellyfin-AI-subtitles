@@ -165,11 +165,18 @@ internal sealed class SubtitleProcessingService
             ?? textStreams[0];
 
         var content = await ReadStreamContentAsync(item, source, cancellationToken).ConfigureAwait(false);
+        if (string.IsNullOrEmpty(content))
+        {
+            summary.ItemsSkippedNoSubtitle++;
+            _logger.LogWarning("Sous-titre source illisible pour {Path}: aucune action effectuée.", item.Path);
+            return;
+        }
+
         var cues = SubtitleText.Parse(content);
         if (cues.Count == 0)
         {
             summary.ItemsSkippedNoSubtitle++;
-            _logger.LogWarning("Sous-titre illisible pour {Path}.", item.Path);
+            _logger.LogWarning("Sous-titre illisible pour {Path}: aucune action effectuée.", item.Path);
             return;
         }
 
@@ -198,7 +205,21 @@ internal sealed class SubtitleProcessingService
             }
 
             var translated = await TranslateCuesAsync(config, lang, cues, cancellationToken).ConfigureAwait(false);
-            await File.WriteAllTextAsync(outputPath, SubtitleText.ToSrt(translated), new UTF8Encoding(false), cancellationToken).ConfigureAwait(false);
+            try
+            {
+                using (var fileStream = new FileStream(outputPath, FileMode.CreateNew, FileAccess.Write, FileShare.None))
+                using (var writer = new StreamWriter(fileStream, new UTF8Encoding(false)))
+                {
+                    await writer.WriteAsync(SubtitleText.ToSrt(translated).AsMemory(), cancellationToken).ConfigureAwait(false);
+                }
+            }
+            catch (IOException)
+            {
+                summary.FilesSkippedExisting++;
+                _logger.LogInformation("Fichier existant ignoré (aucun écrasement): {Path}.", outputPath);
+                continue;
+            }
+
             generated++;
             summary.FilesGenerated++;
             summary.Messages.Add("Généré: " + outputPath);
@@ -264,7 +285,7 @@ internal sealed class SubtitleProcessingService
             .ToList();
     }
 
-    private async Task<string> ReadStreamContentAsync(BaseItem item, MediaStream stream, CancellationToken cancellationToken)
+    private async Task<string?> ReadStreamContentAsync(BaseItem item, MediaStream stream, CancellationToken cancellationToken)
     {
         if (stream.IsExternal && !string.IsNullOrEmpty(stream.Path) && File.Exists(stream.Path))
         {
@@ -274,12 +295,13 @@ internal sealed class SubtitleProcessingService
         return await ExtractEmbeddedStreamAsync(item, stream, cancellationToken).ConfigureAwait(false);
     }
 
-    private async Task<string> ExtractEmbeddedStreamAsync(BaseItem item, MediaStream stream, CancellationToken cancellationToken)
+    private async Task<string?> ExtractEmbeddedStreamAsync(BaseItem item, MediaStream stream, CancellationToken cancellationToken)
     {
         var encoder = _mediaEncoder.EncoderPath;
         if (string.IsNullOrEmpty(encoder) || !File.Exists(encoder))
         {
-            throw new InvalidOperationException("ffmpeg introuvable: impossible d'extraire le sous-titre embarqué.");
+            _logger.LogWarning("ffmpeg introuvable: sous-titre embarqué non extractible pour {Path}, média ignoré.", item.Path);
+            return null;
         }
 
         var tempFile = Path.Combine(Path.GetTempPath(), "aisub-" + Guid.NewGuid().ToString("N") + ".srt");

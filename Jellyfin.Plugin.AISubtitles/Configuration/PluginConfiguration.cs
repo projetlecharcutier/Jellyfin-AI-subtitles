@@ -13,7 +13,7 @@ public class PluginConfiguration : BasePluginConfiguration
     public PluginConfiguration()
     {
         MistralApiKey = string.Empty;
-        MistralModel = "mistral-large-latest";
+        MistralModel = "mistral-small-latest";
         TargetLanguages = "fre";
         RecentItemsLimit = 10;
         AutoScanEnabled = false;

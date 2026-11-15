@@ -52,10 +52,11 @@ internal sealed class MistralClient
             throw new InvalidOperationException("La clé API Mistral n'est pas configurée.");
         }
 
-        var system = "You are a professional subtitle translator. Translate every line into "
+        var system = "You are an expert audiovisual subtitle translator. Translate each numbered line into "
             + targetLanguage
-            + ". Keep the meaning, tone and approximate length. Do not add, remove or reorder lines. "
-            + "Reply ONLY with a JSON object of the form {\"lines\":[...]} containing exactly "
+            + ". Rules: produce exactly one output line per input line, in the same order; preserve the meaning, tone and register of the dialogue; keep proper nouns, brands and onomatopoeia unchanged unless they are commonly translated; never merge, split, add or remove lines; never add explanations, notes or numbering; write natural, idiomatic "
+            + targetLanguage
+            + " suited to subtitles (concise, readable). Reply ONLY with a JSON object of the form {\"lines\":[...]} containing exactly "
             + lines.Count.ToString(System.Globalization.CultureInfo.InvariantCulture)
             + " translated strings, in the same order as the input.";
         var user = new StringBuilder();
