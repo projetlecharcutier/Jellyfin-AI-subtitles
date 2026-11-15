@@ -18,6 +18,22 @@ Dans le dashboard Jellyfin (Avancé → Plugins → AI Subtitles) :
 - **Langues cibles** : cochez les langues pour lesquelles générer une traduction.
 - **Scan automatique** : activation et intervalle (en heures).
 
+## Déclenchement manuel (API, admin requis)
+
+- `POST /AISubtitles/Scan/Recent` : scan des derniers médias ajoutés (limite configurable, 10 par défaut).
+- `POST /AISubtitles/Scan/Item/{itemId}` : traduction IA pour un film ou un épisode précis.
+- `POST /AISubtitles/Scan/Series/{seriesId}` : traduction IA pour une série entière (plafonnée à N épisodes configurables).
+
+Un bouton « Lancer un scan des derniers médias maintenant » est aussi disponible sur la page de configuration du plugin.
+
+## Règles appliquées
+
+- Si plusieurs sous-titres existent, la source choisie est celle en **anglais** (à défaut le premier sous-titre externe, puis le premier trouvé).
+- Les sous-titres embarqués (pistes internes du conteneur) sont extraits via ffmpeg si aucun fichier externe n'est disponible.
+- Le fichier généré est déposé dans le dossier du média et nommé `<nom du média>.<langue>-AI.srt` (ex. `Dune.2021.french-AI.srt`), en SRT UTF-8.
+- Si le fichier `-AI` existe déjà pour une langue, il n'est pas écrasé.
+- Après génération, les métadonnées du média sont rafraîchies pour que Jellyfin voie le nouveau sous-titre.
+
 ## Build
 
 ```bash

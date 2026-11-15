@@ -118,6 +118,9 @@
                         <button is="emby-button" type="submit" class="raised button-submit block emby-button">
                             <span>Enregistrer</span>
                         </button>
+                        <button is="emby-button" type="button" id="ScanRecentButton" class="raised block emby-button">
+                            <span>Lancer un scan des derniers médias maintenant</span>
+                        </button>
                     </div>
                 </form>
             </div>
@@ -142,6 +145,18 @@
                         document.querySelector('#ScanIntervalHours').value = config.ScanIntervalHours;
                         document.querySelector('#SeriesEpisodeLimit').value = config.SeriesEpisodeLimit;
                         Dashboard.hideLoadingMsg();
+                    });
+                });
+
+            document.querySelector('#ScanRecentButton')
+                .addEventListener('click', function() {
+                    ApiClient.ajax({
+                        type: 'POST',
+                        url: ApiClient.getUrl('AISubtitles/Scan/Recent')
+                    }).then(function () {
+                        Dashboard.alert('Scan des derniers médias lancé en arrière-plan.');
+                    }).catch(function () {
+                        Dashboard.alert('Échec du lancement du scan.');
                     });
                 });
 

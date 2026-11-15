@@ -19,6 +19,7 @@ public class PluginConfiguration : BasePluginConfiguration
         AutoScanEnabled = false;
         ScanIntervalHours = 24;
         SeriesEpisodeLimit = 10;
+        LastAutoScanUtc = string.Empty;
     }
 
     /// <summary>
@@ -55,4 +56,9 @@ public class PluginConfiguration : BasePluginConfiguration
     /// Gets or sets the maximum number of episodes processed when a whole series is targeted.
     /// </summary>
     public int SeriesEpisodeLimit { get; set; }
+
+    /// <summary>
+    /// Gets or sets the UTC date-time of the last automatic scan (ISO 8601 round-trip).
+    /// </summary>
+    public string LastAutoScanUtc { get; set; }
 }
