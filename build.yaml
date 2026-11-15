@@ -1,0 +1,18 @@
+---
+name: "AI Subtitles"
+guid: "00dd78e0-78a0-4522-a95d-d6ba9bc24c7d"
+version: "1.0.0.0"
+targetAbi: "10.11.0.0"
+framework: "net9.0"
+overview: "Génère des sous-titres traduits par IA (Mistral) pour les médias de la bibliothèque"
+description: >
+  Scanne les sous-titres existants de la bibliothèque Jellyfin et, lorsqu'un média
+  en possède, génère via l'API Mistral des sous-titres traduits dans une ou plusieurs
+  langues choisies. Les fichiers générés sont déposés à côté du média et nommés
+  "<langue>-AI". Le scan automatique porte sur les 10 derniers médias ajoutés.
+category: "Metadata"
+owner: "projetlecharcutier"
+artifacts:
+- "Jellyfin.Plugin.AISubtitles.dll"
+changelog: >
+  Version initiale

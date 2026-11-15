@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8">
+    <title>AI Subtitles</title>
+</head>
+<body>
+    <div id="AISubtitlesConfigPage" data-role="page" class="page type-interior pluginConfigurationPage" data-require="emby-input,emby-button,emby-select,emby-checkbox">
+        <div data-role="content">
+            <div class="content-primary">
+                <form id="AISubtitlesConfigForm">
+                    <div class="inputContainer">
+                        <label class="inputLabel inputLabelUnfocused" for="MistralApiKey">Clé API Mistral</label>
+                        <input id="MistralApiKey" name="MistralApiKey" type="password" is="emby-input" autocomplete="off" />
+                        <div class="fieldDescription">Clé d'API Mistral utilisée pour générer les traductions.</div>
+                    </div>
+                    <div class="selectContainer">
+                        <label class="selectLabel" for="MistralModel">Modèle Mistral</label>
+                        <select is="emby-select" id="MistralModel" name="MistralModel" class="emby-select-withcolor emby-select">
+                            <option value="mistral-large-latest">mistral-large-latest</option>
+                            <option value="mistral-medium-latest">mistral-medium-latest</option>
+                            <option value="mistral-small-latest">mistral-small-latest</option>
+                            <option value="open-mistral-nemo">open-mistral-nemo</option>
+                            <option value="codestral-latest">codestral-latest</option>
+                        </select>
+                        <div class="fieldDescription">Modèle utilisé pour les traductions.</div>
+                    </div>
+                    <fieldset>
+                        <legend>Langues cibles</legend>
+                        <div class="checkboxContainer checkboxContainer-withDescription">
+                            <label class="emby-checkbox-label">
+                                <input id="lang-fre" name="TargetLanguages" type="checkbox" is="emby-checkbox" value="fre" />
+                                <span>Français (fre)</span>
+                            </label>
+                        </div>
+                        <div class="checkboxContainer checkboxContainer-withDescription">
+                            <label class="emby-checkbox-label">
+                                <input id="lang-eng" name="TargetLanguages" type="checkbox" is="emby-checkbox" value="eng" />
+                                <span>Anglais (eng)</span>
+                            </label>
+                        </div>
+                        <div class="checkboxContainer checkboxContainer-withDescription">
+                            <label class="emby-checkbox-label">
+                                <input id="lang-spa" name="TargetLanguages" type="checkbox" is="emby-checkbox" value="spa" />
+                                <span>Espagnol (spa)</span>
+                            </label>
+                        </div>
+                        <div class="checkboxContainer checkboxContainer-withDescription">
+                            <label class="emby-checkbox-label">
+                                <input id="lang-deu" name="TargetLanguages" type="checkbox" is="emby-checkbox" value="deu" />
+                                <span>Allemand (deu)</span>
+                            </label>
+                        </div>
+                        <div class="checkboxContainer checkboxContainer-withDescription">
+                            <label class="emby-checkbox-label">
+                                <input id="lang-ita" name="TargetLanguages" type="checkbox" is="emby-checkbox" value="ita" />
+                                <span>Italien (ita)</span>
+                            </label>
+                        </div>
+                        <div class="checkboxContainer checkboxContainer-withDescription">
+                            <label class="emby-checkbox-label">
+                                <input id="lang-por" name="TargetLanguages" type="checkbox" is="emby-checkbox" value="por" />
+                                <span>Portugais (por)</span>
+                            </label>
+                        </div>
+                        <div class="checkboxContainer checkboxContainer-withDescription">
+                            <label class="emby-checkbox-label">
+                                <input id="lang-nld" name="TargetLanguages" type="checkbox" is="emby-checkbox" value="nld" />
+                                <span>Néerlandais (nld)</span>
+                            </label>
+                        </div>
+                        <div class="checkboxContainer checkboxContainer-withDescription">
+                            <label class="emby-checkbox-label">
+                                <input id="lang-rus" name="TargetLanguages" type="checkbox" is="emby-checkbox" value="rus" />
+                                <span>Russe (rus)</span>
+                            </label>
+                        </div>
+                        <div class="checkboxContainer checkboxContainer-withDescription">
+                            <label class="emby-checkbox-label">
+                                <input id="lang-jpn" name="TargetLanguages" type="checkbox" is="emby-checkbox" value="jpn" />
+                                <span>Japonais (jpn)</span>
+                            </label>
+                        </div>
+                        <div class="checkboxContainer checkboxContainer-withDescription">
+                            <label class="emby-checkbox-label">
+                                <input id="lang-kor" name="TargetLanguages" type="checkbox" is="emby-checkbox" value="kor" />
+                                <span>Coréen (kor)</span>
+                            </label>
+                        </div>
+                        <div class="checkboxContainer checkboxContainer-withDescription">
+                            <label class="emby-checkbox-label">
+                                <input id="lang-zho" name="TargetLanguages" type="checkbox" is="emby-checkbox" value="zho" />
+                                <span>Chinois (zho)</span>
+                            </label>
+                        </div>
+                        <div class="fieldDescription">Langues dans lesquelles générer les sous-titres "langue-AI".</div>
+                    </fieldset>
+                    <div class="inputContainer">
+                        <label class="inputLabel inputLabelUnfocused" for="RecentItemsLimit">Nombre de derniers médias traités (scan auto)</label>
+                        <input id="RecentItemsLimit" name="RecentItemsLimit" type="number" is="emby-input" min="1" />
+                        <div class="fieldDescription">Par défaut 10, pour ne pas surcharger le serveur ni l'API IA.</div>
+                    </div>
+                    <div class="checkboxContainer checkboxContainer-withDescription">
+                        <label class="emby-checkbox-label">
+                            <input id="AutoScanEnabled" name="AutoScanEnabled" type="checkbox" is="emby-checkbox" />
+                            <span>Activer le scan automatique</span>
+                        </label>
+                    </div>
+                    <div class="inputContainer">
+                        <label class="inputLabel inputLabelUnfocused" for="ScanIntervalHours">Intervalle du scan automatique (heures)</label>
+                        <input id="ScanIntervalHours" name="ScanIntervalHours" type="number" is="emby-input" min="1" />
+                    </div>
+                    <div class="inputContainer">
+                        <label class="inputLabel inputLabelUnfocused" for="SeriesEpisodeLimit">Nombre max d'épisodes traités pour une série entière</label>
+                        <input id="SeriesEpisodeLimit" name="SeriesEpisodeLimit" type="number" is="emby-input" min="1" />
+                    </div>
+                    <div>
+                        <button is="emby-button" type="submit" class="raised button-submit block emby-button">
+                            <span>Enregistrer</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <script type="text/javascript">
+            var AISubtitlesConfig = {
+                pluginUniqueId: '00dd78e0-78a0-4522-a95d-d6ba9bc24c7d'
+            };
+
+            document.querySelector('#AISubtitlesConfigPage')
+                .addEventListener('pageshow', function() {
+                    Dashboard.showLoadingMsg();
+                    ApiClient.getPluginConfiguration(AISubtitlesConfig.pluginUniqueId).then(function (config) {
+                        document.querySelector('#MistralApiKey').value = config.MistralApiKey;
+                        document.querySelector('#MistralModel').value = config.MistralModel;
+                        var langs = (config.TargetLanguages || '').split(',').filter(function (s) { return s.length > 0; });
+                        document.querySelectorAll('input[name="TargetLanguages"]').forEach(function (cb) {
+                            cb.checked = langs.indexOf(cb.value) !== -1;
+                        });
+                        document.querySelector('#RecentItemsLimit').value = config.RecentItemsLimit;
+                        document.querySelector('#AutoScanEnabled').checked = config.AutoScanEnabled;
+                        document.querySelector('#ScanIntervalHours').value = config.ScanIntervalHours;
+                        document.querySelector('#SeriesEpisodeLimit').value = config.SeriesEpisodeLimit;
+                        Dashboard.hideLoadingMsg();
+                    });
+                });
+
+            document.querySelector('#AISubtitlesConfigForm')
+                .addEventListener('submit', function(e) {
+                Dashboard.showLoadingMsg();
+                ApiClient.getPluginConfiguration(AISubtitlesConfig.pluginUniqueId).then(function (config) {
+                    config.MistralApiKey = document.querySelector('#MistralApiKey').value;
+                    config.MistralModel = document.querySelector('#MistralModel').value;
+                    config.TargetLanguages = Array.prototype.slice.call(
+                        document.querySelectorAll('input[name="TargetLanguages"]:checked')
+                    ).map(function (cb) { return cb.value; }).join(',');
+                    config.RecentItemsLimit = parseInt(document.querySelector('#RecentItemsLimit').value, 10) || 10;
+                    config.AutoScanEnabled = document.querySelector('#AutoScanEnabled').checked;
+                    config.ScanIntervalHours = parseInt(document.querySelector('#ScanIntervalHours').value, 10) || 24;
+                    config.SeriesEpisodeLimit = parseInt(document.querySelector('#SeriesEpisodeLimit').value, 10) || 10;
+                    ApiClient.updatePluginConfiguration(AISubtitlesConfig.pluginUniqueId, config).then(function (result) {
+                        Dashboard.processPluginConfigurationUpdateResult(result);
+                    });
+                });
+
+                e.preventDefault();
+                return false;
+            });
+        </script>
+    </div>
+</body>
+</html>
