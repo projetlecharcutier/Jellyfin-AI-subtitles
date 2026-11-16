@@ -82,7 +82,9 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
             new PluginPageInfo
             {
                 Name = Name,
-                EmbeddedResourcePath = string.Format(CultureInfo.InvariantCulture, "{0}.Configuration.configPage.html", GetType().Namespace)
+                DisplayName = "AI Subtitles",
+                EmbeddedResourcePath = string.Format(CultureInfo.InvariantCulture, "{0}.Configuration.configPage.html", GetType().Namespace),
+                EnableInMainMenu = true
             },
             new PluginPageInfo
             {
