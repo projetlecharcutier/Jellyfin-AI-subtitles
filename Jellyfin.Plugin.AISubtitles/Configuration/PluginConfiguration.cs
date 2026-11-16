@@ -15,11 +15,12 @@ public class PluginConfiguration : BasePluginConfiguration
         MistralApiKey = string.Empty;
         MistralModel = "mistral-small-latest";
         TargetLanguages = "fre";
-        RecentItemsLimit = 10;
+        MaxTreatments = 5;
         AutoScanEnabled = false;
         ScanIntervalHours = 24;
         SeriesEpisodeLimit = 10;
         LastAutoScanUtc = string.Empty;
+        LastProcessed = string.Empty;
     }
 
     /// <summary>
@@ -38,9 +39,14 @@ public class PluginConfiguration : BasePluginConfiguration
     public string TargetLanguages { get; set; }
 
     /// <summary>
-    /// Gets or sets the number of most recent items processed by the automatic scan.
+    /// Gets or sets the maximum number of items actually treated (having a source subtitle) per scan.
     /// </summary>
-    public int RecentItemsLimit { get; set; }
+    public int MaxTreatments { get; set; }
+
+    /// <summary>
+    /// Gets or sets the newline-separated log of the most recently processed items (for display in the dashboard).
+    /// </summary>
+    public string LastProcessed { get; set; }
 
     /// <summary>
     /// Gets or sets a value indicating whether the automatic scan is enabled.

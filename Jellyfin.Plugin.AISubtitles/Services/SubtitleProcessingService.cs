@@ -24,6 +24,8 @@ namespace Jellyfin.Plugin.AISubtitles.Services;
 internal sealed class SubtitleProcessingService
 {
     private const int CuesPerRequest = 40;
+    private const int MaxScanWindow = 500;
+    private const int MaxProcessedLogEntries = 20;
 
     private readonly Plugin _plugin;
     private readonly ILibraryManager _libraryManager;
@@ -74,10 +76,12 @@ internal sealed class SubtitleProcessingService
         var items = _libraryManager.GetItemList(query)
             .Where(i => !string.IsNullOrEmpty(i.Path) && File.Exists(i.Path))
             .OrderByDescending(i => i.DateCreated)
-            .Take(Math.Max(1, config.RecentItemsLimit))
+            .Take(MaxScanWindow)
             .ToList();
-        _logger.LogInformation("Scan des {Count} derniers médias ({Limit} max).", items.Count, config.RecentItemsLimit);
-        return await ProcessItemsAsync(items, cancellationToken).ConfigureAwait(false);
+        _logger.LogInformation("Scan des {Count} derniers médias, arrêt après {Limit} média(s) traité(s).", items.Count, config.MaxTreatments);
+        var summary = await ProcessItemsAsync(items, Math.Max(1, config.MaxTreatments), cancellationToken).ConfigureAwait(false);
+        PersistProcessedLog(summary);
+        return summary;
     }
 
     /// <summary>
@@ -102,7 +106,9 @@ internal sealed class SubtitleProcessingService
             .Take(Math.Max(1, config.SeriesEpisodeLimit))
             .ToList();
         _logger.LogInformation("Scan de la série {SeriesId}: {Count} épisodes ({Limit} max).", seriesId, items.Count, config.SeriesEpisodeLimit);
-        return await ProcessItemsAsync(items, cancellationToken).ConfigureAwait(false);
+        var summary = await ProcessItemsAsync(items, 0, cancellationToken).ConfigureAwait(false);
+        PersistProcessedLog(summary);
+        return summary;
     }
 
     /// <summary>
@@ -119,18 +125,28 @@ internal sealed class SubtitleProcessingService
             throw new InvalidOperationException("Média introuvable: " + itemId);
         }
 
-        return ProcessItemsAsync(new[] { item }, cancellationToken);
+        return ProcessItemsAsync(new[] { item }, 0, cancellationToken).ContinueWith(
+            t =>
+            {
+                PersistProcessedLog(t.Result);
+                return t.Result;
+            },
+            cancellationToken,
+            TaskContinuationOptions.None,
+            TaskScheduler.Default);
     }
 
-    private async Task<ScanSummary> ProcessItemsAsync(IReadOnlyList<BaseItem> items, CancellationToken cancellationToken)
+    private async Task<ScanSummary> ProcessItemsAsync(IReadOnlyList<BaseItem> items, int maxTreatments, CancellationToken cancellationToken)
     {
         var summary = new ScanSummary();
         foreach (var item in items)
         {
             cancellationToken.ThrowIfCancellationRequested();
+            var generated = 0;
+            var treated = false;
             try
             {
-                await ProcessItemAsync(item, summary, cancellationToken).ConfigureAwait(false);
+                (treated, generated) = await ProcessItemAsync(item, summary, cancellationToken).ConfigureAwait(false);
             }
             catch (OperationCanceledException)
             {
@@ -144,12 +160,43 @@ internal sealed class SubtitleProcessingService
             }
 
             summary.ItemsProcessed++;
+            if (treated)
+            {
+                summary.ItemsTreated++;
+                summary.ProcessedEntries.Add(
+                    DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm", System.Globalization.CultureInfo.InvariantCulture)
+                    + " | " + item.Path + " | " + generated + " fichier(s) généré(s)");
+            }
+
+            if (maxTreatments > 0 && summary.ItemsTreated >= maxTreatments)
+            {
+                _logger.LogInformation("Limite de {Max} média(s) traité(s) atteinte, arrêt du scan.", maxTreatments);
+                break;
+            }
         }
 
         return summary;
     }
 
-    private async Task ProcessItemAsync(BaseItem item, ScanSummary summary, CancellationToken cancellationToken)
+    private void PersistProcessedLog(ScanSummary summary)
+    {
+        if (summary.ProcessedEntries.Count == 0)
+        {
+            return;
+        }
+
+        var config = _plugin.Configuration;
+        var lines = new List<string>(summary.ProcessedEntries);
+        if (!string.IsNullOrEmpty(config.LastProcessed))
+        {
+            lines.AddRange(config.LastProcessed.Split('\n', StringSplitOptions.RemoveEmptyEntries));
+        }
+
+        config.LastProcessed = string.Join('\n', lines.Take(MaxProcessedLogEntries));
+        _plugin.SaveConfiguration();
+    }
+
+    private async Task<(bool Treated, int Generated)> ProcessItemAsync(BaseItem item, ScanSummary summary, CancellationToken cancellationToken)
     {
         var config = _plugin.Configuration;
         var textStreams = GetTextSubtitleStreams(item);
@@ -157,7 +204,7 @@ internal sealed class SubtitleProcessingService
         {
             summary.ItemsSkippedNoSubtitle++;
             _logger.LogInformation("Aucun sous-titre existant pour {Path}: rien à faire.", item.Path);
-            return;
+            return (false, 0);
         }
 
         var source = textStreams.FirstOrDefault(s => string.Equals(s.Language, "eng", StringComparison.OrdinalIgnoreCase))
@@ -169,7 +216,7 @@ internal sealed class SubtitleProcessingService
         {
             summary.ItemsSkippedNoSubtitle++;
             _logger.LogWarning("Sous-titre source illisible pour {Path}: aucune action effectuée.", item.Path);
-            return;
+            return (false, 0);
         }
 
         var cues = SubtitleText.Parse(content);
@@ -177,7 +224,7 @@ internal sealed class SubtitleProcessingService
         {
             summary.ItemsSkippedNoSubtitle++;
             _logger.LogWarning("Sous-titre illisible pour {Path}: aucune action effectuée.", item.Path);
-            return;
+            return (false, 0);
         }
 
         var sourceLanguage = source.Language ?? string.Empty;
@@ -230,6 +277,8 @@ internal sealed class SubtitleProcessingService
         {
             await RefreshItemAsync(item, cancellationToken).ConfigureAwait(false);
         }
+
+        return (true, generated);
     }
 
     private async Task<List<SubtitleCue>> TranslateCuesAsync(

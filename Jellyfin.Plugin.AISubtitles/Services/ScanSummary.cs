@@ -13,6 +13,11 @@ internal sealed class ScanSummary
     public int ItemsProcessed { get; set; }
 
     /// <summary>
+    /// Gets or sets the number of items actually treated (a source subtitle was found).
+    /// </summary>
+    public int ItemsTreated { get; set; }
+
+    /// <summary>
     /// Gets or sets the number of items skipped because they have no subtitle.
     /// </summary>
     public int ItemsSkippedNoSubtitle { get; set; }
@@ -36,4 +41,9 @@ internal sealed class ScanSummary
     /// Gets the human readable log messages.
     /// </summary>
     public List<string> Messages { get; } = new();
+
+    /// <summary>
+    /// Gets the entries of treated items (timestamp | path | generated files), most recent first.
+    /// </summary>
+    public List<string> ProcessedEntries { get; } = new();
 }

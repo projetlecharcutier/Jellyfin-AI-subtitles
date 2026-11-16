@@ -7,7 +7,7 @@ Plugin Jellyfin qui scanne les sous-titres existants de la bibliothèque et gén
 - Si un média ne possède **aucun** sous-titre, le plugin ne fait **rien** pour lui (aucun fichier créé, modifié ou supprimé).
 - Si plusieurs sous-titres existent, la source est celle en **anglais** (à défaut : premier sous-titre externe, puis premier trouvé).
 - Sinon, un fichier par langue cible est déposé dans le dossier du média, nommé `<nom du média>.<langue>-AI.srt` (ex. `Dune.2021.french-AI.srt`), en SRT UTF-8.
-- Le scan automatique ne traite que les **10 derniers médias ajoutés** (limite configurable), pour ne pas surcharger le serveur ni l'API IA.
+- Le scan automatique parcourt les **500 derniers médias ajoutés** et s'arrête dès que **5 médias ayant un sous-titre à traduire** ont été traités (limite configurable, défaut 5), pour ne pas surcharger le serveur ni l'API IA. Les 20 derniers médias traités sont affichés sur la page de configuration du plugin.
 - Il est possible de déclencher la traduction sur un film précis ou sur une série entière (voir API ci-dessous).
 
 ## Garanties de sécurité
@@ -66,7 +66,7 @@ Dans le dashboard Jellyfin (Avancé → Plugins → AI Subtitles) :
 
 ## Déclenchement manuel (API, admin requis)
 
-- `POST /AISubtitles/Scan/Recent` : scan des derniers médias ajoutés (limite configurable, 10 par défaut).
+- `POST /AISubtitles/Scan/Recent` : scan des derniers médias ajoutés (s'arrête après N médias traités, N configurable, défaut 5).
 - `POST /AISubtitles/Scan/Item/{itemId}` : traduction IA pour un film ou un épisode précis.
 - `POST /AISubtitles/Scan/Series/{seriesId}` : traduction IA pour une série entière (plafonnée à N épisodes configurables).
 
