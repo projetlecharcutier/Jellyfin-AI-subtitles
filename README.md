@@ -24,13 +24,19 @@ Le plugin ne dépend que du .NET 9 embarqué par Jellyfin 10.11 et de l'API Jell
    dotnet build -c Release Jellyfin.Plugin.AISubtitles.slnx
    ```
    Le fichier `Jellyfin.Plugin.AISubtitles\bin\Release\net9.0\Jellyfin.Plugin.AISubtitles.dll` est produit.
-2. Copier ce DLL dans le dossier des plugins de Jellyfin, **dans un sous-dossier de version `1.0.0.0`** (obligatoire depuis Jellyfin 10.9, sinon le plugin apparaît « Deleted » dans le dashboard) :
+2. Installer dans le dossier des plugins de Jellyfin, **dans un sous-dossier de version `1.0.0.0` contenant le DLL et le `meta.xml`** (obligatoire depuis Jellyfin 10.9 : sans sous-dossier de version le plugin apparaît « Deleted », sans `meta.xml` il apparaît « NotSupported » dans le dashboard) :
    ```powershell
    New-Item -ItemType Directory -Force "$env:ProgramData\Jellyfin\Server\plugins\Jellyfin.Plugin.AISubtitles\1.0.0.0"
-   Copy-Item "Jellyfin.Plugin.AISubtitles\bin\Release\net9.0\Jellyfin.Plugin.AISubtitles.dll" "$env:ProgramData\Jellyfin\Server\plugins\Jellyfin.Plugin.AISubtitles\1.0.0.0\"
+   Copy-Item "Jellyfin.Plugin.AISubtitles\\bin\\Release\\net9.0\\Jellyfin.Plugin.AISubtitles.dll" "$env:ProgramData\Jellyfin\Server\plugins\Jellyfin.Plugin.AISubtitles\1.0.0.0\"
+   Copy-Item "dist\Jellyfin.Plugin.AISubtitles\1.0.0.0\meta.xml" "$env:ProgramData\Jellyfin\Server\plugins\Jellyfin.Plugin.AISubtitles\1.0.0.0\"
    ```
-   Résultat attendu : `...\plugins\Jellyfin.Plugin.AISubtitles\1.0.0.0\Jellyfin.Plugin.AISubtitles.dll`
-   (Sur une installation avec dossier de données personnalisé, remplacer `$env:ProgramData\Jellyfin\Server` par ton dossier de données Jellyfin, ex. `E:\Jellyfin\Server`.)
+   Résultat attendu :
+   ```
+   ...\plugins\Jellyfin.Plugin.AISubtitles\1.0.0.0\Jellyfin.Plugin.AISubtitles.dll
+   ...\plugins\Jellyfin.Plugin.AISubtitles\1.0.0.0\meta.xml
+   ```
+   Ou plus simplement : extraire `dist\Jellyfin.Plugin.AISubtitles.zip` directement dans le dossier `plugins\` (le zip contient déjà `Jellyfin.Plugin.AISubtitles\1.0.0.0\` avec DLL + meta.xml).
+   Sur une installation avec dossier de données personnalisé, remplacer `$env:ProgramData\Jellyfin\Server` par ton dossier de données Jellyfin (ex. `E:\Jellyfin\Server`).
 3. Redémarrer Jellyfin.
 4. Ouvrir **Tableau de bord → Avancé → Plugins → AI Subtitles** et renseigner la clé API Mistral, le modèle et les langues cibles.
 
