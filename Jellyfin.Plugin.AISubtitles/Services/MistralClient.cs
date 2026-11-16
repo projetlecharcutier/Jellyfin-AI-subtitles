@@ -93,7 +93,7 @@ internal sealed class MistralClient
                     throw new InvalidOperationException("Erreur API Mistral " + ((int)response.StatusCode) + ": " + body);
                 }
 
-                return ParseTranslatedLines(body, lines.Count);
+                return ParseTranslatedLines(body, lines);
             }
             catch (Exception ex) when (attempt < MaxAttempts)
             {
@@ -105,31 +105,74 @@ internal sealed class MistralClient
         throw new InvalidOperationException("Traduction Mistral échouée après " + MaxAttempts + " tentatives.");
     }
 
-    private static IReadOnlyList<string> ParseTranslatedLines(string responseBody, int expectedCount)
+    private IReadOnlyList<string> ParseTranslatedLines(string responseBody, IReadOnlyList<string> sourceLines)
     {
         using var document = JsonDocument.Parse(responseBody);
         var content = document.RootElement
             .GetProperty("choices")[0]
             .GetProperty("message")
             .GetProperty("content")
-            .GetString() ?? "{}";
+            .GetString() ?? string.Empty;
 
-        var start = content.IndexOf('{', System.StringComparison.Ordinal);
-        var end = content.LastIndexOf('}');
-        var json = start >= 0 && end > start ? content.Substring(start, end - start + 1) : content;
-
-        using var linesDocument = JsonDocument.Parse(json);
-        var array = linesDocument.RootElement.GetProperty("lines");
-        var result = new List<string>(expectedCount);
-        foreach (var element in array.EnumerateArray())
+        var translated = TryParseJsonLines(content) ?? SplitRawLines(content);
+        if (translated.Count != sourceLines.Count)
         {
-            result.Add(element.GetString() ?? string.Empty);
+            _logger.LogWarning(
+                "Mistral a renvoyé {Received} lignes au lieu de {Expected}: complétion/troncature appliquée.",
+                translated.Count,
+                sourceLines.Count);
         }
 
-        if (result.Count != expectedCount)
+        var result = new List<string>(sourceLines.Count);
+        for (var i = 0; i < sourceLines.Count; i++)
         {
-            throw new InvalidOperationException(
-                "Réponse Mistral invalide: " + result.Count + " lignes reçues, " + expectedCount + " attendues.");
+            result.Add(i < translated.Count && translated[i].Length > 0 ? translated[i] : sourceLines[i]);
+        }
+
+        return result;
+    }
+
+    private static List<string>? TryParseJsonLines(string content)
+    {
+        try
+        {
+            var start = content.IndexOf('{', System.StringComparison.Ordinal);
+            var end = content.LastIndexOf('}');
+            if (start < 0 || end <= start)
+            {
+                return null;
+            }
+
+            using var linesDocument = JsonDocument.Parse(content.Substring(start, end - start + 1));
+            if (!linesDocument.RootElement.TryGetProperty("lines", out var array) || array.ValueKind != JsonValueKind.Array)
+            {
+                return null;
+            }
+
+            var result = new List<string>();
+            foreach (var element in array.EnumerateArray())
+            {
+                result.Add(element.ValueKind == JsonValueKind.String ? element.GetString() ?? string.Empty : element.ToString());
+            }
+
+            return result;
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
+    }
+
+    private static List<string> SplitRawLines(string content)
+    {
+        var result = new List<string>();
+        foreach (var raw in content.Split('\n'))
+        {
+            var line = System.Text.RegularExpressions.Regex.Replace(raw.Trim(), @"^\d+[.):\-]\s*", string.Empty).Trim();
+            if (line.Length > 0 && !line.StartsWith('{') && !line.StartsWith('}'))
+            {
+                result.Add(line);
+            }
         }
 
         return result;
