@@ -21,7 +21,6 @@ public class PluginConfiguration : BasePluginConfiguration
         SeriesEpisodeLimit = 10;
         LastAutoScanUtc = string.Empty;
         LastProcessed = string.Empty;
-        AllowAnyUserScan = true;
     }
 
     /// <summary>
@@ -68,9 +67,4 @@ public class PluginConfiguration : BasePluginConfiguration
     /// Gets or sets the UTC date-time of the last automatic scan (ISO 8601 round-trip).
     /// </summary>
     public string LastAutoScanUtc { get; set; }
-
-    /// <summary>
-    /// Gets or sets a value indicating whether any authenticated user (not only admins) may trigger AI subtitle scans.
-    /// </summary>
-    public bool AllowAnyUserScan { get; set; }
 }

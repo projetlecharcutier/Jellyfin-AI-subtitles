@@ -68,18 +68,6 @@ Dans le dashboard Jellyfin (Avancé → Plugins → AI Subtitles) :
 
 Sur la page de configuration du plugin, le champ **« Rechercher un film ou un épisode »** interroge l'API Items de Jellyfin (films + épisodes, 20 résultats) ; chaque résultat a un bouton **« Scanner ce média »** qui appelle `POST /AISubtitles/Scan/Item/{id}`.
 
-## Lancer un scan depuis la page d'un film (tout utilisateur)
-
-Par défaut, **tout utilisateur authentifié** peut déclencher un scan IA (case « Autoriser tout utilisateur authentifié à lancer un scan IA » sur la page de config ; si décochée, admin uniquement).
-
-Un plugin serveur ne peut pas injecter de bouton dans la page de détail d'un média de jellyfin-web, mais tu peux ajouter ce **bookmarklet** dans tes favoris. Sur la page d'un film/épisode, clique dessus : il lit l'ID du média dans l'URL (`#/details?id=...`) et appelle `POST /AISubtitles/Scan/Item/{id}` avec le token de ta session :
-
-```
-javascript:(function(){var m=location.hash.match(/id=([0-9a-fA-F-]{32})/);if(!m){alert('Ouvre d\'abord la page d\'un film ou épisode');return;}var c=JSON.parse(localStorage.getItem('jellyfin_credentials')||'{}');var sv=(c.Servers||[]).find(function(x){return (x.ManualAddress||'').indexOf(location.host)>=0||(x.LocalAddress||'').indexOf(location.host)>=0;})||(c.Servers||[])[0];var t=sv&&sv.AccessToken;fetch(location.origin+'/AISubtitles/Scan/Item/'+m[1],{method:'POST',headers:{'X-Emby-Token':t||''}}).then(function(r){alert(r.ok?'Scan IA lancé pour ce média (voir Historique)':'Échec: HTTP '+r.status);});})();
-```
-
-Copie ce texte dans l'URL d'un favori navigateur (barre de favoris → clic droit → « Ajouter une page » / « Nouveau favori », colle le `javascript:...` comme URL).
-
 ## Page « Historique » (Extensions)
 
 Une page dédiée **« AI Subtitles - Historique »** (menu de gauche, section Extensions) liste **tous les fichiers `*-AI.srt`** trouvés dans les dossiers des médiathèques (chemin, taille, date de modification), **50 par page** avec pagination. Les données viennent de `GET /AISubtitles/History?page=N&pageSize=50`.
