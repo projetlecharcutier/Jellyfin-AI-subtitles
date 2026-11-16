@@ -127,6 +127,17 @@
                             <span>Lancer un scan des derniers médias maintenant</span>
                         </button>
                     </div>
+                    <fieldset style="margin-top: 24px;">
+                        <legend>Scanner un média précis</legend>
+                        <div class="inputContainer">
+                            <label class="inputLabel inputLabelUnfocused" for="ItemSearch">Rechercher un film ou un épisode</label>
+                            <input id="ItemSearch" type="text" is="emby-input" placeholder="Titre du film / épisode…" />
+                        </div>
+                        <button is="emby-button" type="button" id="ItemSearchButton" class="raised emby-button">
+                            <span>Rechercher</span>
+                        </button>
+                        <ul id="ItemSearchResults" style="margin-top: 8px; padding-left: 20px;"></ul>
+                    </fieldset>
                 </form>
             </div>
         </div>
@@ -158,6 +169,73 @@
                         document.querySelector('#SeriesEpisodeLimit').value = config.SeriesEpisodeLimit;
                         Dashboard.hideLoadingMsg();
                     });
+                });
+
+            function searchItems() {
+                var term = document.querySelector('#ItemSearch').value.trim();
+                var list = document.querySelector('#ItemSearchResults');
+                list.innerHTML = '';
+                if (term.length < 2) {
+                    return;
+                }
+                Dashboard.showLoadingMsg();
+                ApiClient.ajax({
+                    type: 'GET',
+                    url: ApiClient.getUrl('Items'),
+                    data: {
+                        searchTerm: term,
+                        IncludeItemTypes: 'Movie,Episode',
+                        Recursive: true,
+                        Limit: 20,
+                        Fields: 'Path'
+                    },
+                    dataType: 'json'
+                }).then(function (result) {
+                    Dashboard.hideLoadingMsg();
+                    (result.Items || []).forEach(function (item) {
+                        var li = document.createElement('li');
+                        li.style.marginBottom = '6px';
+                        var label = document.createElement('span');
+                        label.textContent = item.Name + (item.Path ? ' — ' + item.Path : '');
+                        var btn = document.createElement('button');
+                        btn.setAttribute('is', 'emby-button');
+                        btn.setAttribute('type', 'button');
+                        btn.className = 'raised emby-button';
+                        btn.style.marginLeft = '8px';
+                        btn.textContent = 'Scanner ce média';
+                        btn.addEventListener('click', function () {
+                            ApiClient.ajax({
+                                type: 'POST',
+                                url: ApiClient.getUrl('AISubtitles/Scan/Item/' + item.Id)
+                            }).then(function () {
+                                Dashboard.alert('Scan IA lancé pour « ' + item.Name + ' » (voir les logs et la page Historique).');
+                            }).catch(function () {
+                                Dashboard.alert('Échec du lancement du scan.');
+                            });
+                        });
+                        li.appendChild(label);
+                        li.appendChild(btn);
+                        list.appendChild(li);
+                    });
+                    if (!result.Items || result.Items.length === 0) {
+                        var empty = document.createElement('li');
+                        empty.textContent = 'Aucun résultat.';
+                        list.appendChild(empty);
+                    }
+                }).catch(function () {
+                    Dashboard.hideLoadingMsg();
+                    Dashboard.alert('Erreur lors de la recherche.');
+                });
+            }
+
+            document.querySelector('#ItemSearchButton')
+                .addEventListener('click', searchItems);
+            document.querySelector('#ItemSearch')
+                .addEventListener('keydown', function (e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        searchItems();
+                    }
                 });
 
             document.querySelector('#ScanRecentButton')
