@@ -298,9 +298,9 @@ internal sealed class SubtitleProcessingService
     private async Task<string?> ExtractEmbeddedStreamAsync(BaseItem item, MediaStream stream, CancellationToken cancellationToken)
     {
         var encoder = _mediaEncoder.EncoderPath;
-        if (string.IsNullOrEmpty(encoder) || !File.Exists(encoder))
+        if (string.IsNullOrEmpty(encoder))
         {
-            _logger.LogWarning("ffmpeg introuvable: sous-titre embarqué non extractible pour {Path}, média ignoré.", item.Path);
+            _logger.LogWarning("Aucun encodeur ffmpeg configuré: sous-titre embarqué non extractible pour {Path}, média ignoré.", item.Path);
             return null;
         }
 
@@ -315,7 +315,25 @@ internal sealed class SubtitleProcessingService
                 UseShellExecute = false,
                 CreateNoWindow = true
             };
-            using var process = Process.Start(startInfo) ?? throw new InvalidOperationException("Impossible de lancer ffmpeg.");
+            System.ComponentModel.Win32Exception? startError = null;
+            Process? process = null;
+            try
+            {
+                process = Process.Start(startInfo);
+            }
+            catch (System.ComponentModel.Win32Exception ex)
+            {
+                startError = ex;
+            }
+
+            if (process == null)
+            {
+                _logger.LogWarning(startError, "Impossible de lancer ffmpeg ({Encoder}): média ignoré pour {Path}.", encoder, item.Path);
+                return null;
+            }
+
+            using (process)
+            {
             var errorTask = process.StandardError.ReadToEndAsync(cancellationToken);
             await process.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
             var error = await errorTask.ConfigureAwait(false);
@@ -325,6 +343,7 @@ internal sealed class SubtitleProcessingService
             }
 
             return await File.ReadAllTextAsync(tempFile, cancellationToken).ConfigureAwait(false);
+            }
         }
         finally
         {
