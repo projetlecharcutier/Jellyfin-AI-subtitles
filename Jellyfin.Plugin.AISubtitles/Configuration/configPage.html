@@ -111,6 +111,13 @@
                             <span>Activer le scan automatique</span>
                         </label>
                     </div>
+                    <div class="checkboxContainer checkboxContainer-withDescription">
+                        <label class="emby-checkbox-label">
+                            <input id="AllowAnyUserScan" name="AllowAnyUserScan" type="checkbox" is="emby-checkbox" />
+                            <span>Autoriser tout utilisateur authentifié à lancer un scan IA (pas seulement les admins)</span>
+                        </label>
+                        <div class="fieldDescription">Permet à n'importe quel utilisateur de déclencher la génération de sous-titres IA via l'API (ex. depuis la page du film avec le bookmarklet du README). Désactivé = admin uniquement.</div>
+                    </div>
                     <div class="inputContainer">
                         <label class="inputLabel inputLabelUnfocused" for="ScanIntervalHours">Intervalle du scan automatique (heures)</label>
                         <input id="ScanIntervalHours" name="ScanIntervalHours" type="number" is="emby-input" min="1" />
@@ -165,6 +172,7 @@
                             list.appendChild(li);
                         });
                         document.querySelector('#AutoScanEnabled').checked = config.AutoScanEnabled;
+                        document.querySelector('#AllowAnyUserScan').checked = config.AllowAnyUserScan;
                         document.querySelector('#ScanIntervalHours').value = config.ScanIntervalHours;
                         document.querySelector('#SeriesEpisodeLimit').value = config.SeriesEpisodeLimit;
                         Dashboard.hideLoadingMsg();
@@ -259,6 +267,7 @@
                     ).map(function (cb) { return cb.value; }).join(',');
                     config.MaxTreatments = parseInt(document.querySelector('#MaxTreatments').value, 10) || 5;
                     config.AutoScanEnabled = document.querySelector('#AutoScanEnabled').checked;
+                    config.AllowAnyUserScan = document.querySelector('#AllowAnyUserScan').checked;
                     config.ScanIntervalHours = parseInt(document.querySelector('#ScanIntervalHours').value, 10) || 24;
                     config.SeriesEpisodeLimit = parseInt(document.querySelector('#SeriesEpisodeLimit').value, 10) || 10;
                     ApiClient.updatePluginConfiguration(AISubtitlesConfig.pluginUniqueId, config).then(function (result) {

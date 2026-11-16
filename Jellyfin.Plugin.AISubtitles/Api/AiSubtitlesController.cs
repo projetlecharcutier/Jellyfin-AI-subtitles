@@ -4,7 +4,10 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Jellyfin.Data;
+using Jellyfin.Database.Implementations.Enums;
 using MediaBrowser.Controller.Library;
+using MediaBrowser.Controller.Net;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -17,21 +20,36 @@ namespace Jellyfin.Plugin.AISubtitles.Api;
 /// </summary>
 [ApiController]
 [Route("AISubtitles")]
-[Authorize(Policy = "RequiresElevation")]
+[Authorize]
 public class AiSubtitlesController : ControllerBase
 {
     private readonly ILibraryManager _libraryManager;
+    private readonly IAuthorizationContext _authorizationContext;
     private readonly ILogger<AiSubtitlesController> _logger;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="AiSubtitlesController"/> class.
     /// </summary>
     /// <param name="libraryManager">The library manager.</param>
+    /// <param name="authorizationContext">The authorization context.</param>
     /// <param name="logger">The logger.</param>
-    public AiSubtitlesController(ILibraryManager libraryManager, ILogger<AiSubtitlesController> logger)
+    public AiSubtitlesController(ILibraryManager libraryManager, IAuthorizationContext authorizationContext, ILogger<AiSubtitlesController> logger)
     {
         _libraryManager = libraryManager;
+        _authorizationContext = authorizationContext;
         _logger = logger;
+    }
+
+    private async Task<IActionResult?> CheckScanAllowedAsync()
+    {
+        var plugin = Plugin.Instance;
+        if (plugin != null && plugin.Configuration.AllowAnyUserScan)
+        {
+            return null;
+        }
+
+        var authInfo = await _authorizationContext.GetAuthorizationInfo(HttpContext).ConfigureAwait(false);
+        return authInfo.User != null && authInfo.User.HasPermission(PermissionKind.IsAdministrator) ? null : Forbid();
     }
 
     /// <summary>
@@ -40,8 +58,14 @@ public class AiSubtitlesController : ControllerBase
     /// <returns>202 Accepted.</returns>
     [HttpPost("Scan/Recent")]
     [ProducesResponseType(StatusCodes.Status202Accepted)]
-    public IActionResult ScanRecent()
+    public async Task<IActionResult> ScanRecent()
     {
+        var denied = await CheckScanAllowedAsync().ConfigureAwait(false);
+        if (denied != null)
+        {
+            return denied;
+        }
+
         var engine = GetEngine();
         _ = Task.Run(
             async () =>
@@ -66,8 +90,14 @@ public class AiSubtitlesController : ControllerBase
     [HttpPost("Scan/Item/{itemId:guid}")]
     [ProducesResponseType(StatusCodes.Status202Accepted)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public IActionResult ScanItem(Guid itemId)
+    public async Task<IActionResult> ScanItem(Guid itemId)
     {
+        var denied = await CheckScanAllowedAsync().ConfigureAwait(false);
+        if (denied != null)
+        {
+            return denied;
+        }
+
         if (_libraryManager.GetItemById(itemId) == null)
         {
             return NotFound(new { message = "Média introuvable: " + itemId });
@@ -96,8 +126,14 @@ public class AiSubtitlesController : ControllerBase
     /// <returns>202 Accepted.</returns>
     [HttpPost("Scan/Series/{seriesId:guid}")]
     [ProducesResponseType(StatusCodes.Status202Accepted)]
-    public IActionResult ScanSeries(Guid seriesId)
+    public async Task<IActionResult> ScanSeries(Guid seriesId)
     {
+        var denied = await CheckScanAllowedAsync().ConfigureAwait(false);
+        if (denied != null)
+        {
+            return denied;
+        }
+
         var engine = GetEngine();
         _ = Task.Run(
             async () =>
