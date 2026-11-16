@@ -26,6 +26,7 @@ internal sealed class SubtitleProcessingService
     private const int CuesPerRequest = 40;
     private const int MaxScanWindow = 500;
     private const int MaxProcessedLogEntries = 20;
+    private const int RequestDelayMs = 500;
 
     private readonly Plugin _plugin;
     private readonly ILibraryManager _libraryManager;
@@ -312,6 +313,7 @@ internal sealed class SubtitleProcessingService
 
             var translated = await _mistral.TranslateLinesAsync(
                 config.MistralApiKey, config.MistralModel, languageName, lines, cancellationToken).ConfigureAwait(false);
+            await Task.Delay(RequestDelayMs, cancellationToken).ConfigureAwait(false);
             for (var i = 0; i < mapping.Count; i++)
             {
                 result[start + mapping[i].Cue].Lines[mapping[i].Line] = translated[i];

@@ -50,9 +50,9 @@ Alternative : une fois le plugin publié dans le dépôt officiel des plugins Je
 
 ## Prompt utilisé
 
-Le plugin envoie ce prompt système au modèle (les lignes à traduire sont numérotées dans le message utilisateur, et le modèle doit répondre uniquement en JSON `{"lines":[...]}` avec exactement le même nombre de lignes) :
+Le plugin envoie ce prompt système au modèle (les lignes à traduire sont numérotées dans le message utilisateur, et le modèle doit répondre uniquement en JSON indexé `{"1":"...","2":"...",...}` (clés = numéros des lignes d'entrée, température 0)) :
 
-> You are an expert audiovisual subtitle translator. Translate each numbered line into {langue}. Rules: produce exactly one output line per input line, in the same order; preserve the meaning, tone and register of the dialogue; keep proper nouns, brands and onomatopoeia unchanged unless they are commonly translated; never merge, split, add or remove lines; never add explanations, notes or numbering; write natural, idiomatic {langue} suited to subtitles (concise, readable). Reply ONLY with a JSON object of the form {"lines":[...]} containing exactly N translated strings, in the same order as the input.
+> You are an expert audiovisual subtitle translator. Translate each numbered line into {langue}. Rules: translate every numbered line; preserve the meaning, tone and register of the dialogue; keep proper nouns, brands and onomatopoeia unchanged unless they are commonly translated; never merge, split, add or remove lines; never add explanations, notes or commentary; write natural, idiomatic {langue} suited to subtitles (concise, readable). Reply ONLY with a JSON object mapping each input number to its translation, e.g. {"1":"...","2":"..."}, containing exactly the keys "1" to "N".
 
 ## Configuration
 

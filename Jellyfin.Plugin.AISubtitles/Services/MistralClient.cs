@@ -54,11 +54,10 @@ internal sealed class MistralClient
 
         var system = "You are an expert audiovisual subtitle translator. Translate each numbered line into "
             + targetLanguage
-            + ". Rules: produce exactly one output line per input line, in the same order; preserve the meaning, tone and register of the dialogue; keep proper nouns, brands and onomatopoeia unchanged unless they are commonly translated; never merge, split, add or remove lines; never add explanations, notes or numbering; write natural, idiomatic "
+            + ". Rules: translate every numbered line; preserve the meaning, tone and register of the dialogue; keep proper nouns, brands and onomatopoeia unchanged unless they are commonly translated; never merge, split, add or remove lines; never add explanations, notes or commentary; write natural, idiomatic "
             + targetLanguage
-            + " suited to subtitles (concise, readable). Reply ONLY with a JSON object of the form {\"lines\":[...]} containing exactly "
-            + lines.Count.ToString(System.Globalization.CultureInfo.InvariantCulture)
-            + " translated strings, in the same order as the input.";
+            + " suited to subtitles (concise, readable). Reply ONLY with a JSON object mapping each input number to its translation, e.g. {\"1\":\"...\",\"2\":\"...\"}, containing exactly the keys "
+            + "\"1\" to \"" + lines.Count.ToString(System.Globalization.CultureInfo.InvariantCulture) + "\".";
         var user = new StringBuilder();
         for (var i = 0; i < lines.Count; i++)
         {
@@ -80,7 +79,7 @@ internal sealed class MistralClient
                         new { role = "user", content = user.ToString() }
                     },
                     response_format = new { type = "json_object" },
-                    temperature = 0.3
+                    temperature = 0.0
                 };
                 request.Content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
 
@@ -114,25 +113,32 @@ internal sealed class MistralClient
             .GetProperty("content")
             .GetString() ?? string.Empty;
 
-        var translated = TryParseJsonLines(content) ?? SplitRawLines(content);
-        if (translated.Count != sourceLines.Count)
-        {
-            _logger.LogWarning(
-                "Mistral a renvoyé {Received} lignes au lieu de {Expected}: complétion/troncature appliquée.",
-                translated.Count,
-                sourceLines.Count);
-        }
-
+        var mapping = TryParseJsonMapping(content) ?? ParseNumberedLines(content);
+        var missing = 0;
         var result = new List<string>(sourceLines.Count);
         for (var i = 0; i < sourceLines.Count; i++)
         {
-            result.Add(i < translated.Count && translated[i].Length > 0 ? translated[i] : sourceLines[i]);
+            var key = (i + 1).ToString(System.Globalization.CultureInfo.InvariantCulture);
+            if (mapping.TryGetValue(key, out var translated) && translated.Length > 0)
+            {
+                result.Add(translated);
+            }
+            else
+            {
+                missing++;
+                result.Add(sourceLines[i]);
+            }
+        }
+
+        if (missing > 0)
+        {
+            _logger.LogWarning("Mistral: {Missing}/{Total} lignes non traduites, source conservée.", missing, sourceLines.Count);
         }
 
         return result;
     }
 
-    private static List<string>? TryParseJsonLines(string content)
+    private static Dictionary<string, string>? TryParseJsonMapping(string content)
     {
         try
         {
@@ -143,19 +149,19 @@ internal sealed class MistralClient
                 return null;
             }
 
-            using var linesDocument = JsonDocument.Parse(content.Substring(start, end - start + 1));
-            if (!linesDocument.RootElement.TryGetProperty("lines", out var array) || array.ValueKind != JsonValueKind.Array)
+            using var document = JsonDocument.Parse(content.Substring(start, end - start + 1));
+            if (document.RootElement.ValueKind != JsonValueKind.Object)
             {
                 return null;
             }
 
-            var result = new List<string>();
-            foreach (var element in array.EnumerateArray())
+            var result = new Dictionary<string, string>(StringComparer.Ordinal);
+            foreach (var property in document.RootElement.EnumerateObject())
             {
-                result.Add(element.ValueKind == JsonValueKind.String ? element.GetString() ?? string.Empty : element.ToString());
+                result[property.Name] = property.Value.ValueKind == JsonValueKind.String ? property.Value.GetString() ?? string.Empty : property.Value.ToString();
             }
 
-            return result;
+            return result.Count > 0 ? result : null;
         }
         catch (JsonException)
         {
@@ -163,15 +169,16 @@ internal sealed class MistralClient
         }
     }
 
-    private static List<string> SplitRawLines(string content)
+    private static Dictionary<string, string> ParseNumberedLines(string content)
     {
-        var result = new List<string>();
+        var result = new Dictionary<string, string>(StringComparer.Ordinal);
+        var regex = new System.Text.RegularExpressions.Regex(@"^\s*(\d+)[.):\-]\s*(.*)$");
         foreach (var raw in content.Split('\n'))
         {
-            var line = System.Text.RegularExpressions.Regex.Replace(raw.Trim(), @"^\d+[.):\-]\s*", string.Empty).Trim();
-            if (line.Length > 0 && !line.StartsWith('{') && !line.StartsWith('}'))
+            var match = regex.Match(raw);
+            if (match.Success && match.Groups[2].Value.Trim().Length > 0)
             {
-                result.Add(line);
+                result[match.Groups[1].Value] = match.Groups[2].Value.Trim();
             }
         }
 
