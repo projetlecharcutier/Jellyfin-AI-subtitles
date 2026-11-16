@@ -1,0 +1,15 @@
+{
+  "name": "AI Subtitles",
+  "guid": "00dd78e0-78a0-4522-a95d-d6ba9bc24c7d",
+  "version": "1.0.0.0",
+  "targetAbi": "10.11.0.0",
+  "status": "Active",
+  "overview": "Génère des sous-titres traduits par IA (Mistral) pour les médias de la bibliothèque",
+  "description": "Scanne les sous-titres existants de la bibliothèque et génère, via l'API Mistral, des sous-titres traduits déposés à côté du média et nommés \"<langue>-AI\".",
+  "category": "Metadata",
+  "owner": "projetlecharcutier",
+  "changelog": "Version initiale",
+  "timestamp": "2026-11-16T00:00:00Z",
+  "autoUpdate": false,
+  "assemblies": [ "Jellyfin.Plugin.AISubtitles.dll" ]
+}
