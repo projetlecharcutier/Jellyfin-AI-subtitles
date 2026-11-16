@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8">
+    <title>AI Subtitles - Historique</title>
+</head>
+<body>
+    <div id="AISubtitlesHistoryPage" data-role="page" class="page type-interior pluginConfigurationPage" data-require="emby-button">
+        <div data-role="content">
+            <div class="content-primary">
+                <h1>Sous-titres IA générés (<span id="HistoryTotal">…</span>)</h1>
+                <p class="fieldDescription">Tous les fichiers <code>*-AI.srt</code> trouvés dans les dossiers des médiathèques, du plus récent au plus ancien.</p>
+                <table id="HistoryTable" style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr>
+                            <th style="text-align: left; padding: 4px 8px;">Fichier</th>
+                            <th style="text-align: right; padding: 4px 8px;">Taille</th>
+                            <th style="text-align: left; padding: 4px 8px;">Modifié le</th>
+                        </tr>
+                    </thead>
+                    <tbody id="HistoryBody">
+                    </tbody>
+                </table>
+                <div style="margin-top: 12px;">
+                    <button is="emby-button" type="button" id="HistoryPrev" class="raised emby-button">← Précédent</button>
+                    <span id="HistoryPager" style="margin: 0 12px;">Page 1</span>
+                    <button is="emby-button" type="button" id="HistoryNext" class="raised emby-button">Suivant →</button>
+                </div>
+            </div>
+        </div>
+        <script type="text/javascript">
+            (function () {
+                var pageSize = 50;
+                var page = 1;
+
+                function load() {
+                    Dashboard.showLoadingMsg();
+                    ApiClient.ajax({
+                        type: 'GET',
+                        url: ApiClient.getUrl('AISubtitles/History?page=' + page + '&pageSize=' + pageSize),
+                        dataType: 'json'
+                    }).then(function (result) {
+                        var tbody = document.querySelector('#HistoryBody');
+                        tbody.innerHTML = '';
+                        (result.items || []).forEach(function (item) {
+                            var tr = document.createElement('tr');
+                            var sizeKb = (item.size / 1024).toFixed(1) + ' Ko';
+                            var date = new Date(item.modified).toLocaleString();
+                            tr.innerHTML = '<td style="padding: 4px 8px; word-break: break-all;"></td>' +
+                                '<td style="padding: 4px 8px; text-align: right; white-space: nowrap;"></td>' +
+                                '<td style="padding: 4px 8px; white-space: nowrap;"></td>';
+                            tr.children[0].textContent = item.path;
+                            tr.children[1].textContent = sizeKb;
+                            tr.children[2].textContent = date;
+                            tbody.appendChild(tr);
+                        });
+                        var total = result.total || 0;
+                        var pages = Math.max(1, Math.ceil(total / pageSize));
+                        document.querySelector('#HistoryTotal').textContent = total;
+                        document.querySelector('#HistoryPager').textContent = 'Page ' + page + ' / ' + pages;
+                        document.querySelector('#HistoryPrev').disabled = page <= 1;
+                        document.querySelector('#HistoryNext').disabled = page >= pages;
+                        Dashboard.hideLoadingMsg();
+                    }).catch(function () {
+                        Dashboard.hideLoadingMsg();
+                        Dashboard.alert('Erreur lors du chargement de l\'historique.');
+                    });
+                }
+
+                document.querySelector('#AISubtitlesHistoryPage').addEventListener('pageshow', load);
+                document.querySelector('#HistoryPrev').addEventListener('click', function () { if (page > 1) { page--; load(); } });
+                document.querySelector('#HistoryNext').addEventListener('click', function () { page++; load(); });
+            })();
+        </script>
+    </div>
+</body>
+</html>

@@ -64,6 +64,10 @@ Dans le dashboard Jellyfin (Avancé → Plugins → AI Subtitles) :
 - **Scan automatique** : activation et intervalle (en heures), limité aux derniers médias ajoutés.
 - Bouton **« Lancer un scan des derniers médias maintenant »** pour un scan manuel immédiat.
 
+## Page « Historique » (Extensions)
+
+Une page dédiée **« AI Subtitles - Historique »** (menu de gauche, section Extensions) liste **tous les fichiers `*-AI.srt`** trouvés dans les dossiers des médiathèques (chemin, taille, date de modification), **50 par page** avec pagination. Les données viennent de `GET /AISubtitles/History?page=N&pageSize=50`.
+
 ## Déclenchement manuel (API, admin requis)
 
 - `POST /AISubtitles/Scan/Recent` : scan des derniers médias ajoutés (s'arrête après N médias traités, N configurable, défaut 5).

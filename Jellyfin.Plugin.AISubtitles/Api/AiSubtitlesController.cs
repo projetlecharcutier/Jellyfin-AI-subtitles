@@ -1,4 +1,7 @@
 using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using MediaBrowser.Controller.Library;
@@ -109,6 +112,57 @@ public class AiSubtitlesController : ControllerBase
                 }
             });
         return Accepted(new { message = "Traitement de la série lancé en arrière-plan: " + seriesId });
+    }
+
+    /// <summary>
+    /// Lists all generated "-AI" subtitle files found in the library folders, paginated.
+    /// </summary>
+    /// <param name="page">The 1-based page number.</param>
+    /// <param name="pageSize">The page size (max 200).</param>
+    /// <returns>The paginated list.</returns>
+    [HttpGet("History")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public IActionResult GetHistory([FromQuery] int page = 1, [FromQuery] int pageSize = 50)
+    {
+        page = Math.Max(1, page);
+        pageSize = Math.Clamp(pageSize, 1, 200);
+        var roots = _libraryManager.GetVirtualFolders()
+            .SelectMany(v => v.Locations)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        var files = new List<HistoryItem>();
+        foreach (var root in roots)
+        {
+            IEnumerable<string> found;
+            try
+            {
+                found = Directory.EnumerateFiles(root, "*-AI.srt", SearchOption.AllDirectories);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Lecture du dossier impossible: {Root}.", root);
+                continue;
+            }
+
+            foreach (var file in found)
+            {
+                try
+                {
+                    var info = new FileInfo(file);
+                    files.Add(new HistoryItem { Path = file, Size = info.Length, Modified = info.LastWriteTimeUtc });
+                }
+                catch (IOException)
+                {
+                }
+                catch (UnauthorizedAccessException)
+                {
+                }
+            }
+        }
+
+        var ordered = files.OrderByDescending(f => f.Modified).ToList();
+        var items = ordered.Skip((page - 1) * pageSize).Take(pageSize).ToList();
+        return Ok(new { total = ordered.Count, page, pageSize, items });
     }
 
     private static Services.SubtitleProcessingService GetEngine()
