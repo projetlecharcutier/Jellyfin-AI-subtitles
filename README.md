@@ -24,20 +24,19 @@ Le plugin ne dépend que du .NET 9 embarqué par Jellyfin 10.11 et de l'API Jell
    dotnet build -c Release Jellyfin.Plugin.AISubtitles.slnx
    ```
    Le fichier `Jellyfin.Plugin.AISubtitles\bin\Release\net9.0\Jellyfin.Plugin.AISubtitles.dll` est produit.
-2. Installer dans le dossier des plugins de Jellyfin. Structure attendue par Jellyfin 10.11 (vérifiée dans le source `PluginManager.LoadManifest`) :
+2. Installer dans le dossier des plugins de Jellyfin. Structure attendue par Jellyfin 10.11 (vérifiée dans le source `PluginManager`) : **le DLL et le `meta.json` (JSON) vont tous deux à la racine du dossier plugin** ; les entrées `assemblies` du `meta.json` sont résolues relativement à cette racine :
    ```
-   ...\plugins\Jellyfin.Plugin.AISubtitles\meta.json                      <- manifeste JSON (guid + targetAbi + status Active)
-   ...\plugins\Jellyfin.Plugin.AISubtitles\1.0.0.0\Jellyfin.Plugin.AISubtitles.dll
+   ...\plugins\Jellyfin.Plugin.AISubtitles\meta.json
+   ...\plugins\Jellyfin.Plugin.AISubtitles\Jellyfin.Plugin.AISubtitles.dll
    ```
-   Le DLL peut être à la racine du dossier plugin ou dans un sous-dossier (Jellyfin scanne en récursif), mais **`meta.json` doit être à la racine du dossier plugin** et en **JSON** (pas XML). Sans `meta.json` valide, Jellyfin en auto-génère un (guid = MD5 du nom de dossier) et, si le DLL référence des assemblies plus récentes que le serveur (ex. build 10.11.5 sur serveur 10.11.2), le plugin passe « NotSupported ».
    ```powershell
-   New-Item -ItemType Directory -Force "$env:ProgramData\Jellyfin\Server\plugins\Jellyfin.Plugin.AISubtitles\1.0.0.0"
-   Copy-Item "Jellyfin.Plugin.AISubtitles\\bin\\Release\\net9.0\\Jellyfin.Plugin.AISubtitles.dll" "$env:ProgramData\Jellyfin\Server\plugins\Jellyfin.Plugin.AISubtitles\1.0.0.0\"
+   New-Item -ItemType Directory -Force "$env:ProgramData\Jellyfin\Server\plugins\Jellyfin.Plugin.AISubtitles"
    Copy-Item "dist\Jellyfin.Plugin.AISubtitles\meta.json" "$env:ProgramData\Jellyfin\Server\plugins\Jellyfin.Plugin.AISubtitles\"
+   Copy-Item "dist\Jellyfin.Plugin.AISubtitles\Jellyfin.Plugin.AISubtitles.dll" "$env:ProgramData\Jellyfin\Server\plugins\Jellyfin.Plugin.AISubtitles\"
    ```
    Ou plus simplement : extraire `dist\Jellyfin.Plugin.AISubtitles.zip` directement dans le dossier `plugins\`.
    Sur une installation avec dossier de données personnalisé, remplacer `$env:ProgramData\Jellyfin\Server` par ton dossier de données Jellyfin (ex. `E:\Jellyfin\Server`).
-   Important : builder avec les packages `Jellyfin.Controller`/`Jellyfin.Model` **10.11.0** (déjà le cas dans le csproj) pour que le DLL charge sur tout serveur 10.11.x.
+   Important : builder avec les packages `Jellyfin.Controller`/`Jellyfin.Model` **10.11.0** (déjà le cas dans le csproj) pour que le DLL charge sur tout serveur 10.11.x (un build 10.11.5 sur un serveur 10.11.2 donne « NotSupported »).
 3. Redémarrer Jellyfin.
 4. Ouvrir **Tableau de bord → Avancé → Plugins → AI Subtitles** et renseigner la clé API Mistral, le modèle et les langues cibles.
 
