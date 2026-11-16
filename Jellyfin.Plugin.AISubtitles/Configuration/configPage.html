@@ -181,15 +181,13 @@
                 Dashboard.showLoadingMsg();
                 ApiClient.ajax({
                     type: 'GET',
-                    url: ApiClient.getUrl('Items'),
-                    data: {
+                    url: ApiClient.getUrl('Items', {
                         searchTerm: term,
                         IncludeItemTypes: 'Movie,Episode',
                         Recursive: true,
                         Limit: 20,
                         Fields: 'Path'
-                    },
-                    dataType: 'json'
+                    })
                 }).then(function (result) {
                     Dashboard.hideLoadingMsg();
                     (result.Items || []).forEach(function (item) {
