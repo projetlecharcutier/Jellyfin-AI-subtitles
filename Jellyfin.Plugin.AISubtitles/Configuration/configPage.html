@@ -179,14 +179,17 @@
                     return;
                 }
                 Dashboard.showLoadingMsg();
+                var userId = ApiClient.getCurrentUserId();
                 ApiClient.ajax({
                     type: 'GET',
-                    url: ApiClient.getUrl('Items', {
+                    dataType: 'json',
+                    url: ApiClient.getUrl('Users/' + userId + '/Items', {
                         searchTerm: term,
-                        IncludeItemTypes: 'Movie,Episode',
-                        Recursive: true,
-                        Limit: 20,
-                        Fields: 'Path'
+                        includeItemTypes: 'Movie,Episode',
+                        recursive: true,
+                        limit: 20,
+                        fields: 'Path',
+                        enableTotalRecordCount: true
                     })
                 }).then(function (result) {
                     Dashboard.hideLoadingMsg();
@@ -217,12 +220,12 @@
                     });
                     if (!result.Items || result.Items.length === 0) {
                         var empty = document.createElement('li');
-                        empty.textContent = 'Aucun résultat.';
+                        empty.textContent = 'Aucun résultat (' + (result.TotalRecordCount || 0) + ' au total).';
                         list.appendChild(empty);
                     }
-                }).catch(function () {
+                }).catch(function (err) {
                     Dashboard.hideLoadingMsg();
-                    Dashboard.alert('Erreur lors de la recherche.');
+                    Dashboard.alert('Erreur lors de la recherche: ' + ((err && err.status) ? 'HTTP ' + err.status : err));
                 });
             }
 
