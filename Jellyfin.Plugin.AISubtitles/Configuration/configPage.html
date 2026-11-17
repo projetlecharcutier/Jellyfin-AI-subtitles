@@ -193,11 +193,15 @@
                     })
                 }).then(function (result) {
                     Dashboard.hideLoadingMsg();
-                    (result.Items || []).forEach(function (item) {
+                    var items = result.Items || result.items || [];
+                    items.forEach(function (item) {
                         var li = document.createElement('li');
                         li.style.marginBottom = '6px';
                         var label = document.createElement('span');
-                        label.textContent = item.Name + (item.Path ? ' — ' + item.Path : '');
+                        var itemName = item.Name || item.name || '';
+                        var itemPath = item.Path || item.path || '';
+                        var itemId = item.Id || item.id;
+                        label.textContent = itemName + (itemPath ? ' — ' + itemPath : '');
                         var btn = document.createElement('button');
                         btn.setAttribute('is', 'emby-button');
                         btn.setAttribute('type', 'button');
@@ -207,9 +211,9 @@
                         btn.addEventListener('click', function () {
                             ApiClient.ajax({
                                 type: 'POST',
-                                url: ApiClient.getUrl('AISubtitles/Scan/Item/' + item.Id)
+                                url: ApiClient.getUrl('AISubtitles/Scan/Item/' + itemId)
                             }).then(function () {
-                                Dashboard.alert('Scan IA lancé pour « ' + item.Name + ' » (voir les logs et la page Historique).');
+                                Dashboard.alert('Scan IA lancé pour « ' + itemName + ' » (voir les logs et la page Historique).');
                             }).catch(function () {
                                 Dashboard.alert('Échec du lancement du scan.');
                             });
@@ -218,9 +222,9 @@
                         li.appendChild(btn);
                         list.appendChild(li);
                     });
-                    if (!result.Items || result.Items.length === 0) {
+                    if (items.length === 0) {
                         var empty = document.createElement('li');
-                        empty.textContent = 'Aucun résultat (' + (result.TotalRecordCount || 0) + ' au total).';
+                        empty.textContent = 'Aucun résultat (' + (result.TotalRecordCount || result.totalRecordCount || 0) + ' au total).';
                         list.appendChild(empty);
                     }
                 }).catch(function (err) {

@@ -33,6 +33,14 @@
                 var pageSize = 50;
                 var page = 1;
 
+                function prop(obj, name) {
+                    if (obj[name] !== undefined && obj[name] !== null) {
+                        return obj[name];
+                    }
+                    var lower = name.charAt(0).toLowerCase() + name.slice(1);
+                    return obj[lower];
+                }
+
                 function load() {
                     Dashboard.showLoadingMsg();
                     ApiClient.ajax({
@@ -42,28 +50,31 @@
                     }).then(function (result) {
                         var tbody = document.querySelector('#HistoryBody');
                         tbody.innerHTML = '';
-                        (result.items || []).forEach(function (item) {
+                        (prop(result, 'Items') || []).forEach(function (item) {
+                            var path = prop(item, 'Path') || '';
+                            var size = prop(item, 'Size') || 0;
+                            var modified = prop(item, 'Modified');
                             var tr = document.createElement('tr');
-                            var sizeKb = (item.size / 1024).toFixed(1) + ' Ko';
-                            var date = new Date(item.modified).toLocaleString();
+                            var sizeKb = (size / 1024).toFixed(1) + ' Ko';
+                            var date = modified ? new Date(modified).toLocaleString() : '';
                             tr.innerHTML = '<td style="padding: 4px 8px; word-break: break-all;"></td>' +
                                 '<td style="padding: 4px 8px; text-align: right; white-space: nowrap;"></td>' +
                                 '<td style="padding: 4px 8px; white-space: nowrap;"></td>';
-                            tr.children[0].textContent = item.path;
+                            tr.children[0].textContent = path;
                             tr.children[1].textContent = sizeKb;
                             tr.children[2].textContent = date;
                             tbody.appendChild(tr);
                         });
-                        var total = result.total || 0;
+                        var total = prop(result, 'Total') || 0;
                         var pages = Math.max(1, Math.ceil(total / pageSize));
                         document.querySelector('#HistoryTotal').textContent = total;
                         document.querySelector('#HistoryPager').textContent = 'Page ' + page + ' / ' + pages;
                         document.querySelector('#HistoryPrev').disabled = page <= 1;
                         document.querySelector('#HistoryNext').disabled = page >= pages;
                         Dashboard.hideLoadingMsg();
-                    }).catch(function () {
+                    }).catch(function (err) {
                         Dashboard.hideLoadingMsg();
-                        Dashboard.alert('Erreur lors du chargement de l\'historique.');
+                        Dashboard.alert('Erreur lors du chargement de l\'historique: ' + ((err && err.status) ? 'HTTP ' + err.status : err));
                     });
                 }
 
